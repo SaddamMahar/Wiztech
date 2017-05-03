@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+                           http://www.springframework.org/schema/vmc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+">
+    <context:component-scan base-package="com.primeid.controller" />
+    
+    
+    <bean id="accountService" class="com.primeid.service.AccountService" autowire="default" />
+    <bean id="ipService" class="com.primeid.service.IPService" autowire="default" />
+    <bean id="sessionTableService" class="com.primeid.service.SessionTableService" autowire="default" />
+    <bean id="auditService" class="com.primeid.service.AuditService" autowire="default" />
+    <bean id="customAuthenticationService" class="com.primeid.service.CustomAuthenticationService" autowire="default" />
+    <bean id="caseService" class="com.primeid.service.CaseService" autowire="default" />
+    <bean id="jurisdictionService" class="com.primeid.service.JurisdictionService" autowire="default" />
+    <bean id="accountJurisdictionService" class="com.primeid.service.AccountJurisdictionService" autowire="default" />
+    <bean id="artifactService" class="com.primeid.service.ArtifactService" autowire="default" />
+    <bean id="artifactTypeService" class="com.primeid.service.ArtifactTypeService" autowire="default" />
+    
+    <bean id="accountDao" class="com.primeid.daoImpl.AccountDaoImpl" autowire="default" />
+    <bean id="ipDao" class="com.primeid.daoImpl.IPDaoImpl" autowire="default" />
+    <bean id="sessionTableDao" class="com.primeid.daoImpl.SessionTableDaoImpl" autowire="default" />
+    <bean id="auditDao" class="com.primeid.daoImpl.AuditDaoImpl" autowire="default" />
+    <bean id="caseDao" class="com.primeid.daoImpl.CaseDaoImpl" autowire="default" />
+    <bean id="jurisdictionDao" class="com.primeid.daoImpl.JurisdictionDaoImpl" autowire="default" />
+    <bean id="accountJurisdictionDao" class="com.primeid.daoImpl.AccountJurisdictionDaoImpl" autowire="default" />
+    <bean id="artifactDao" class="com.primeid.daoImpl.ArtifactDaoImpl" autowire="default" />
+    <bean id="artifactTypeDao" class="com.primeid.daoImpl.ArtifactTypeDaoImpl" autowire="default" />
+    
+    <bean id = "jwtTokenUtil" class = "com.primeid.config.JwtTokenUtil" />
+    
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://localhost/primeid" />
+        <property name="username" value="root" />
+        <property name="password" value="" />
+<!--        <property name="url" value="jdbc:mysql://13.55.8.28/primeid" />
+        <property name="username" value="novigi" />
+        <property name="password" value="2017m24fun" />-->
+    </bean>
+    
+    <!-- Hibernate Session Factory -->
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate5.LocalSessionFactoryBean" autowire="byType">
+        <property name="dataSource" ref="dataSource" />
+        <property name="packagesToScan" value="com.primeid.model" />
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.SQLServerDialect</prop>
+                <prop key="hibernate.show_sql">false</prop>  
+                <prop key="hibernate.hbm2ddl.auto">none</prop>    
+                
+                <!-- <prop key="hibernate.hbm2ddl.auto">none</prop> 
+               <prop key="hibernate.hbm2ddl.auto">create-drop</prop>   
+                -->
+            </props>
+        </property>
+        <property name="annotatedClasses">
+            <list>
+                <value>com.primeid.model.Account</value>
+                <value>com.primeid.model.IP</value>
+                <value>com.primeid.model.SessionTable</value>
+                <value>com.primeid.model.Audit</value>
+                <value>com.primeid.model.Case</value>
+                <value>com.primeid.model.Jurisdiction</value>
+                <value>com.primeid.model.AccountJurisdiction</value>
+                <value>com.primeid.model.Artifact</value>
+                <value>com.primeid.model.ArtifactType</value>
+            </list>
+        </property>
+    </bean>
+    
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    
+    
+    <bean id = "transactionManager" class = "org.springframework.orm.hibernate5.HibernateTransactionManager">
+        <property name = "sessionFactory" ref = "sessionFactory" />
+    </bean>    
+    <bean id="multipartResolver"
+      class="org.springframework.web.multipart.commons.CommonsMultipartResolver" />
+    
+</beans>
