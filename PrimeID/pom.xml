@@ -89,6 +89,7 @@
             <groupId>javax</groupId>
             <artifactId>javaee-web-api</artifactId>
             <version>6.0</version>
+            <scope>provided</scope>
         </dependency>
         <!-- Apache Commons FileUpload --> 
    
@@ -111,6 +112,13 @@
             <artifactId>tesseract</artifactId>
             <version>3.03-rc1-0.11</version>
         </dependency>-->
+        <!-- https://mvnrepository.com/artifact/net.sourceforge.tess4j/tess4j -->
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

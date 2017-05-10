@@ -8,17 +8,27 @@ import com.primeid.model.Audit;
 import com.primeid.model.Case;
 import com.primeid.model.IP;
 import com.primeid.model.Jurisdiction;
+import com.primeid.model.OcrMap;
+import com.primeid.model.OcrOutput;
+import com.primeid.model.OcrResult;
 import com.primeid.model.SessionTable;
 import com.primeid.model.UploadArtifactJson;
 import com.primeid.utils.Constants;
+import com.primeid.utils.UznFormat;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +65,9 @@ public class CustomAuthenticationService {
     private ArtifactTypeService artifactTypeService;
 
     @Autowired
+    private OcrResultService ocrResultService;
+
+    @Autowired
     private JurisdictionService jurisdictionService;
 
     public HashMap<String, String> ipAuthentication(String params, HttpServletRequest request, String headers) {
@@ -87,7 +100,7 @@ public class CustomAuthenticationService {
             transactionAudit.setHeaderParams(headers);
             transactionAudit.setIp(request.getRemoteAddr());
 
-            response = updateAccountCodeResponse("402", "Invalid IP", false);
+            response = updateAccountCodeResponse("402", Constants.Errors.TWO.toString(), false);
             transactionAudit.setResponse(gson.toJson(response));
             auditService.save(transactionAudit);
             return response;
@@ -349,49 +362,65 @@ public class CustomAuthenticationService {
             UploadArtifactJson artifactJson = gson.fromJson(json, UploadArtifactJson.class);
             artifact.setMeta(gson.toJson(artifactJson.getMeta()));
             artifact.setOcr_map(gson.toJson(artifactJson.getOcr_map()));
-            if (hasFile) {
-                if (file.isEmpty()) {
-                    return response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
+            ldtNow = ldtNow.plusHours(EXPIRY_DURATION);
+            tokenTable.setExpiry(ldtNow.format(dtf));
+            sessionTableService.update(tokenTable);
+            String extension = artifactJson.getMeta().getFormat();
+            artifact.setArtifactTypes(artifactTypeService.loadByArtifactCode(extension));
+            if(artifactJson.getType()!= null){
+                try {
+                    if(artifactTypeService.loadByArtifactTypeID(Long.parseLong(artifactJson.getType())) == null){
+                        return response = updateTokenResponse("417", Constants.Errors.SEVENTEEN.toString(), false);
+                    }
+                } catch (Exception e) {
+                    return response = updateTokenResponse("417", Constants.Errors.SEVENTEEN.toString(), false);
                 }
-                if (artifactJson == null || artifactJson.getType() == null || artifactJson.getMeta().getFormat() == null
-                        || artifactJson.getMeta().getName() == null || artifactJson.getMeta().getSize() == null) {
+            }
+            if (hasFile) {
+                if (artifactJson == null || artifactJson.getType() == null || artifactJson.getMeta().getName() == null ||
+                        artifactJson.getMeta().getSize() == null) {
 
                     return response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
                 }
-                String extension = artifactJson.getMeta().getFormat();
-                if (extension.isEmpty()) {
+                if (file.isEmpty()) {
+                    return response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
+                }else if (!file.getOriginalFilename().split("\\.")[0].equalsIgnoreCase(artifactJson.getMeta().getName())) {
+                    return response = updateTokenResponse("416", Constants.Errors.SIXTEEN.toString(), false);
+                } else if (!file.getOriginalFilename().split("\\.")[1].equalsIgnoreCase(artifactJson.getMeta().getFormat())) {
                     return response = updateTokenResponse("410", Constants.Errors.TEN.toString(), false);
+                } else if (file.getSize() != Long.parseLong(artifactJson.getMeta().getSize())) {
+                    return response = updateTokenResponse("411", Constants.Errors.ELEVEN.toString(), false);
                 }
-                artifact.setArtifactTypes(artifactTypeService.loadByArtifactCode(extension));
+                
                 String path = Paths.get("").toAbsolutePath() + "\\uploads\\" + file.getOriginalFilename();
+                artifact.setRepositoryRef(path);
                 File nfile = new File(path);
                 nfile.getParentFile().mkdirs();
                 nfile.createNewFile();
-                if (file.getSize() == Long.parseLong(artifactJson.getMeta().getSize()) && file.getOriginalFilename().split("\\.")[0].equals(artifactJson.getMeta().getName())
-                        && file.getOriginalFilename().split("\\.")[1].equalsIgnoreCase(artifactJson.getMeta().getFormat())) {
 
-                    OutputStream outputStream = new FileOutputStream(path);
+                OutputStream outputStream = new FileOutputStream(path);
 
-                    outputStream.write(file.getBytes());
-                    outputStream.flush();
-                    outputStream.close();
-                    return response = updateArtifactResponse(artifact.getArtifactID() + "", tokenTable.getExpiry(), true);
-                } else {
-                    return response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
-                }
+                outputStream.write(file.getBytes());
+                outputStream.flush();
+                outputStream.close();
+
+                artifact.setCases(caseTable);
+                artifact.setCreated(ldtNow.now().format(dtf));
+                artifactService.save(artifact);
+                return response = updateArtifactResponse(artifact.getArtifactID() + "", tokenTable.getExpiry(), true);
+
             } else if (validateHTTP_URI(artifactJson.getLocation())) {
                 artifact.setRepositoryRef(artifactJson.getLocation());
             } else {
                 return response = updateTokenResponse("414", Constants.Errors.FOURTEEN.toString(), false);
             }
-            ldtNow = ldtNow.plusHours(EXPIRY_DURATION);
-            tokenTable.setExpiry(ldtNow.format(dtf));
-            sessionTableService.update(tokenTable);
+
             artifact.setCases(caseTable);
             artifact.setCreated(ldtNow.now().format(dtf));
             artifactService.save(artifact);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
         }
         return response = updateArtifactResponse(artifact.getArtifactID() + "", tokenTable.getExpiry(), true);
@@ -447,5 +476,135 @@ public class CustomAuthenticationService {
         } else {
             return false;
         }
+    }
+
+    public HashMap<String, String> OCR(String json, HttpServletRequest request) {
+        HashMap<String, String> response = new HashMap<String, String>();
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime ldtNow = LocalDateTime.now();
+        Gson gson = new Gson();
+        Audit audit = new Audit();
+        String[] headerKeys = {"token", "caseID", "hasFile"};
+        String[] headerValues = getHeaders(request);
+        String headerParams = "";
+        int count = 0;
+        for (String value : headerValues) {
+            if (value != null) {
+                if (count == 0) {
+                    headerParams = headerKeys[count] + " : " + value;
+                } else {
+                    headerParams += ", " + headerKeys[count] + " : " + value;
+                }
+                count++;
+            }
+
+        }
+
+        SessionTable tokenTable = new SessionTable();
+
+        audit.setCreated(ldtNow.format(dtf));
+        audit.setHeaderParams(headerParams);
+        audit.setIp(request.getRemoteAddr());
+        audit.setRequestURL(request.getRequestURI().toString());
+        Arrays.stream(getHeaders(request)).forEach(i -> System.out.println(i));
+
+        response = ipAuthentication(json, request, headerParams);
+        if (response != null) {
+            audit.setResponse(gson.toJson(response));
+            auditService.save(audit);
+            return response;
+        }
+        response = validateToken(headerValues[0]);
+        if (response != null) {
+            audit.setResponse(gson.toJson(response));
+            auditService.save(audit);
+            return response;
+        }
+        if (json == null) {
+            response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
+            audit.setResponse(gson.toJson(response));
+            auditService.save(audit);
+            return response;
+        }
+        tokenTable = sessionTableService.loadSessionTableByTokenExpiry(headerValues[0]);
+        ldtNow = ldtNow.plusHours(EXPIRY_DURATION);
+        tokenTable.setExpiry(ldtNow.format(dtf));
+        sessionTableService.update(tokenTable);
+
+        Map<String, Object> map = new HashMap<String, Object>();
+        map = (Map<String, Object>) gson.fromJson(json, map.getClass());
+        Artifact artifact = artifactService.loadArtifactByArtifactID(Long.parseLong(map.get("artifactKey").toString()));
+        if(null == map.get("artifactKey") || artifact.getArtifactID() == 0){
+            response = updateTokenResponse("412", Constants.Errors.TWELIVE.toString(), false);
+            audit.setResponse(gson.toJson(response));
+            auditService.save(audit);
+            return response;
+        }
+        Case caseTable = caseService.loadCaseByCaseID(artifact.getCases().getCaseID());
+        if (!(caseTable.getAccounts().getAccountID() == tokenTable.getAccounts().getAccountID())) {
+            response = updateTokenResponse("403", Constants.Errors.THREE.toString(), false);
+            audit.setResponse(gson.toJson(response));
+            auditService.save(audit);
+            return response;
+        } else {
+            OcrMap[] ocrMaps = gson.fromJson(artifact.getOcr_map(), OcrMap[].class);
+            UznFormat uzn = new UznFormat();
+            String path = artifact.getRepositoryRef();
+            String conversionPath = Paths.get("").toAbsolutePath() +"\\ocr_conversions\\";
+            System.out.println("path : " + path);
+            File imageFile  = new File(path);
+            String[] ex = imageFile.getName().split("\\.");
+            String fileNameExtension = imageFile.getName(); //with type
+            String fileName = imageFile.getName().replace(ex[ex.length-1], ""); //without type
+            System.out.println("fileName : " + fileName);
+            System.out.println("conversionPath : " + conversionPath);
+            BufferedImage img = null;
+            BufferedImage blackWhite = null;            
+            try {
+                OcrResult ocr = new OcrResult();
+                img = ImageIO.read(imageFile);
+                if(uzn.createUZNFile(ocrMaps,conversionPath,fileName)){
+                    blackWhite = uzn.convertingImage(img, conversionPath, fileNameExtension);
+                    File file = new File (conversionPath+fileName + "uzn");
+                    List<OcrOutput> ocr_results = uzn.tess4jText(blackWhite , file);
+                    ocr.setArtifacts(artifact);
+                    ocr.setConnectionData(gson.toJson(file));
+                    ocr.setResponseData(gson.toJson(ocr_results));
+                    ocr.setCreated(ldtNow.format(dtf));
+                    ocr = ocrResultService.save(ocr);
+                    response = new HashMap<>();
+                    response.put("ocrResultsID", ocr.getOcrResultID()+"");
+                    response.put("ocr_results", gson.toJson(ocr_results));
+                    audit.setResponse(gson.toJson(response));
+                    auditService.save(audit);                    
+                    return response;
+                } else {
+                    
+                }
+                
+            } catch (IOException e) {
+                response = updateTokenResponse("415", Constants.Errors.FOURTEEN.toString(), false);
+                audit.setResponse(gson.toJson(response));
+                auditService.save(audit);
+                return response;
+            }
+
+        }
+
+        return null;
+    }
+
+    public String[] getHeaders(HttpServletRequest request) {
+        String[] headers = new String[5];
+        if (request.getHeader("token") != null) {
+            headers[0] = request.getHeader("token");
+        }
+        if (request.getHeader("caseID") != null) {
+            headers[1] = request.getHeader("caseID");
+        }
+        if (request.getHeader("hasFile") != null) {
+            headers[2] = request.getHeader("hasFile");
+        }
+        return headers;
     }
 }

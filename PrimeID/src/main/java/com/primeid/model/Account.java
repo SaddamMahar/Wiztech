@@ -67,7 +67,7 @@ public class Account implements Serializable{
         this.SessionTables = SessionTables;
     }
 
-    @OneToMany(targetEntity = Case.class, mappedBy = "accounts", fetch = FetchType.EAGER)
+    @OneToMany(targetEntity = Case.class, mappedBy = "accounts")
     public Set<Case> getCaseTables() {
         return caseTables;
     }

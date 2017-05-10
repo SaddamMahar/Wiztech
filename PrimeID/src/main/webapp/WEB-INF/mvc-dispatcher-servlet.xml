@@ -23,6 +23,7 @@
     <bean id="accountJurisdictionService" class="com.primeid.service.AccountJurisdictionService" autowire="default" />
     <bean id="artifactService" class="com.primeid.service.ArtifactService" autowire="default" />
     <bean id="artifactTypeService" class="com.primeid.service.ArtifactTypeService" autowire="default" />
+    <bean id="ocrResultService" class="com.primeid.service.OcrResultService" autowire="default" />
     
     <bean id="accountDao" class="com.primeid.daoImpl.AccountDaoImpl" autowire="default" />
     <bean id="ipDao" class="com.primeid.daoImpl.IPDaoImpl" autowire="default" />
@@ -33,6 +34,7 @@
     <bean id="accountJurisdictionDao" class="com.primeid.daoImpl.AccountJurisdictionDaoImpl" autowire="default" />
     <bean id="artifactDao" class="com.primeid.daoImpl.ArtifactDaoImpl" autowire="default" />
     <bean id="artifactTypeDao" class="com.primeid.daoImpl.ArtifactTypeDaoImpl" autowire="default" />
+    <bean id="ocrResultDao" class="com.primeid.daoImpl.OcrResultDaoImpl" autowire="default" />
     
     <bean id = "jwtTokenUtil" class = "com.primeid.config.JwtTokenUtil" />
     
@@ -73,6 +75,7 @@
                 <value>com.primeid.model.AccountJurisdiction</value>
                 <value>com.primeid.model.Artifact</value>
                 <value>com.primeid.model.ArtifactType</value>
+                <value>com.primeid.model.OcrResult</value>
             </list>
         </property>
     </bean>

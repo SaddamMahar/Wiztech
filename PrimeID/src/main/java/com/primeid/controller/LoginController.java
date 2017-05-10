@@ -80,18 +80,29 @@ public class LoginController {
             @RequestHeader(value = "hasFile", required = false, defaultValue = "false") boolean hasFile,
             @RequestParam(value = "file", required = false) MultipartFile file, @RequestParam(value = "data", required = false) String data, HttpServletRequest request)
             throws IOException, ServletException, FileUploadException {
-
-//        Tesseract t = new Tesseract();
-//        try {
-//            t.givenTessBaseApi_whenImageOcrd_thenTextDisplayed();
-//        } catch (Exception ex) {
-//            ex.printStackTrace();
-//        }
+        
         Gson gson = new Gson();
         HashMap<String, String> response = new HashMap<String, String>();
         response = customAuthenticationService.uploadArtifact(token, caseID, hasFile, request, file, data);
 
+        if(response.containsKey("status")){
+            return new ResponseEntity<>(gson.toJson(response), HttpStatus.BAD_REQUEST);
+        }
         return new ResponseEntity<>(gson.toJson(response), HttpStatus.OK);
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/runOCR", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<?> runOCR(@RequestBody(required = false) String json, HttpServletRequest request) {
+
+        Gson gson = new Gson();
+        System.out.println("");
+        HashMap<String, String> response = new HashMap<String, String>();
+        response = customAuthenticationService.OCR(json, request);
+        if(response.containsKey("ocrResultsID")){
+            return new ResponseEntity<>(gson.toJson(response), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(gson.toJson(response), HttpStatus.BAD_REQUEST);
     }
 
 }

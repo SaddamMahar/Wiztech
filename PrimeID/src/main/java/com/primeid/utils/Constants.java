@@ -23,7 +23,10 @@ public interface Constants{
         ELEVEN("File Length Invalid"),
         TWELIVE("Artifact Key Invalid"),
         THIRTEEN("Invalid Jurisdiction"),
-        FOURTEEN("Invalid Location");
+        FOURTEEN("Invalid Location"),
+        FIFTEEN("Image Not Found"),
+        SIXTEEN("File Name Invalid"),
+        SEVENTEEN("Invalid ArtifactTypeID");
         
         private String value;
 
