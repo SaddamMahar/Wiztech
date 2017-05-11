@@ -26,7 +26,9 @@ public interface Constants{
         FOURTEEN("Invalid Location"),
         FIFTEEN("Image Not Found"),
         SIXTEEN("File Name Invalid"),
-        SEVENTEEN("Invalid ArtifactTypeID");
+        SEVENTEEN("Invalid ArtifactTypeID"),
+        EIGHTEEN("Uzn File Creation Error"),
+        NINETEEN("B&W_Image Creation Error");
         
         private String value;
 

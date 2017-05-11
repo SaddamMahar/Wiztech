@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.validator.routines.UrlValidator;
@@ -564,9 +566,16 @@ public class CustomAuthenticationService {
                 OcrResult ocr = new OcrResult();
                 img = ImageIO.read(imageFile);
                 if(uzn.createUZNFile(ocrMaps,conversionPath,fileName)){
-                    blackWhite = uzn.convertingImage(img, conversionPath, fileNameExtension);
+                    try {
+                        blackWhite = uzn.convertingImage(img, conversionPath, fileNameExtension);
+                    } catch (Throwable ex1) {
+                        response = updateTokenResponse("419", Constants.Errors.NINETEEN.toString(), false);
+                        audit.setResponse(gson.toJson(response));
+                        auditService.save(audit);
+                        return response;
+                    }
                     File file = new File (conversionPath+fileName + "uzn");
-                    List<OcrOutput> ocr_results = uzn.tess4jText(blackWhite , file);
+                    List<OcrOutput> ocr_results = uzn.tess4jText(img , file);
                     ocr.setArtifacts(artifact);
                     ocr.setConnectionData(gson.toJson(file));
                     ocr.setResponseData(gson.toJson(ocr_results));
@@ -576,22 +585,23 @@ public class CustomAuthenticationService {
                     response.put("ocrResultsID", ocr.getOcrResultID()+"");
                     response.put("ocr_results", gson.toJson(ocr_results));
                     audit.setResponse(gson.toJson(response));
-                    auditService.save(audit);                    
-                    return response;
+                    auditService.save(audit);
+                    file.delete();
+                    new File(conversionPath+fileNameExtension).delete();
+                    return response;                    
                 } else {
-                    
-                }
-                
+                    response = updateTokenResponse("418", Constants.Errors.EIGHTEEN.toString(), false);
+                    audit.setResponse(gson.toJson(response));
+                    auditService.save(audit);
+                    return response;
+                }                
             } catch (IOException e) {
-                response = updateTokenResponse("415", Constants.Errors.FOURTEEN.toString(), false);
+                response = updateTokenResponse("414", Constants.Errors.FOURTEEN.toString(), false);
                 audit.setResponse(gson.toJson(response));
                 auditService.save(audit);
                 return response;
             }
-
         }
-
-        return null;
     }
 
     public String[] getHeaders(HttpServletRequest request) {
