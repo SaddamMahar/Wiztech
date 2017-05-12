@@ -12,6 +12,7 @@
 ">
     <context:component-scan base-package="com.primeid.controller" />
     
+    <bean id="customFunctions" class="com.primeid.utils.CustomFunctions" />
     
     <bean id="accountService" class="com.primeid.service.AccountService" autowire="default" />
     <bean id="ipService" class="com.primeid.service.IPService" autowire="default" />
@@ -24,6 +25,8 @@
     <bean id="artifactService" class="com.primeid.service.ArtifactService" autowire="default" />
     <bean id="artifactTypeService" class="com.primeid.service.ArtifactTypeService" autowire="default" />
     <bean id="ocrResultService" class="com.primeid.service.OcrResultService" autowire="default" />
+    <bean id="ocrService" class="com.primeid.service.OCRService" autowire="default" />
+    <bean id="uploadService" class="com.primeid.service.UploadService" autowire="default" />
     
     <bean id="accountDao" class="com.primeid.daoImpl.AccountDaoImpl" autowire="default" />
     <bean id="ipDao" class="com.primeid.daoImpl.IPDaoImpl" autowire="default" />
@@ -44,8 +47,8 @@
         <property name="username" value="root" />
         <property name="password" value="" />
 <!--        <property name="url" value="jdbc:mysql://13.55.8.28/primeid" />
-        <property name="username" value="novigi" />
-        <property name="password" value="2017m24fun" />-->
+        <property name="username" value="novigi"/>
+        <property name="password" value="2017m24fun"/>-->
     </bean>
     
     <!-- Hibernate Session Factory -->

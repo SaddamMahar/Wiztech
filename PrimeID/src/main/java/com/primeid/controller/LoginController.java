@@ -3,6 +3,8 @@ package com.primeid.controller;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.primeid.service.CustomAuthenticationService;
+import com.primeid.service.OCRService;
+import com.primeid.service.UploadService;
 import java.io.IOException;
 import java.util.HashMap;
 import javax.servlet.ServletException;
@@ -29,6 +31,12 @@ public class LoginController {
 
     @Autowired
     private CustomAuthenticationService customAuthenticationService;
+
+    @Autowired
+    private OCRService ocrService;
+
+    @Autowired
+    private UploadService uploadService;
 
     @ResponseBody
     @RequestMapping(value = "/authenticate", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
@@ -80,7 +88,7 @@ public class LoginController {
         
         Gson gson = new Gson();
         HashMap<String, String> response = new HashMap<String, String>();
-        response = customAuthenticationService.uploadArtifact(token, caseID, hasFile, request, file, data);
+        response = uploadService.uploadArtifact(token, caseID, hasFile, request, file, data);
 
         if(response.containsKey("status")){
             return new ResponseEntity<>(gson.toJson(response), HttpStatus.BAD_REQUEST);
@@ -93,9 +101,9 @@ public class LoginController {
     public ResponseEntity<?> runOCR(@RequestBody(required = false) String json, HttpServletRequest request) {
 
         Gson gson = new Gson();
-        System.out.println("");
+        System.out.println(System.getProperty("user.dir"));
         HashMap<String, String> response = new HashMap<String, String>();
-        response = customAuthenticationService.OCR(json, request);
+        response = ocrService.OCR(json, request);
         if(response.containsKey("ocrResultsID")){
             return new ResponseEntity<>(gson.toJson(response), HttpStatus.OK);
         }

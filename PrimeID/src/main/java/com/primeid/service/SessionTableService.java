@@ -16,10 +16,11 @@ public class SessionTableService {
     @Autowired
     private SessionTableDao sessionTableDao;
 
-    @Transactional(readOnly = true)
+//    @Transactional(readOnly = true)
     public SessionTable loadSessionTableByToken(String token) {
         SessionTable sessionTable = null;
         sessionTable = sessionTableDao.findByToken(token);
+        System.out.println(sessionTable.getAccounts().getAccountID());
         return sessionTable;
     }
 
